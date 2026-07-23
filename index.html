@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kasir Warung Sembako</title>
+    <script type="text/javascript" src="https://ff.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=oCMBBZbkwBKdyOTjlQe45rvsEINSqdtMSQ4yV4OFYhQus0BWtx3KLSk3qCwBGSCL6_q6rsmEhzT1VrJ0VZS6z6lKfdbv3WRyzYztZMrR06TrXo8EG9C1rYuPpuczLAWNNCpp2OXDd76lwuEArb2jrmpy5Q4Fuz6Lw7y1lXpSmizt6BwSueiNYuU-rBPDS7kdjzCFn-MpNAhWn3RBjvmDIDFups6-L-7D5FL1YgHqwygFQMzIqstdowcVgcdIs9Zjb7xVyVIUifhhZ8hm7j5te8WI6_JFaBsg8CCFxmhavwFDmHLoZOPyiydUfD7_Z2_j" charset="UTF-8"></script><style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --background: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2 { margin-top: 0; }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 300px;
+        }
+        .grid-produk {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .card-produk {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #fff;
+            transition: transform 0.2s;
+        }
+        .card-produk:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-primary { background-color: var(--primary); }
+        .btn-success { background-color: var(--success); font-size: 1.1em; padding: 15px; }
+        .btn-danger { background-color: var(--danger); width: auto; padding: 5px 10px;}
+        .keranjang-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .total-box {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: right;
+            margin: 20px 0;
+            padding-top: 20px;
+            border-top: 2px dashed #ccc;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            background: #eee;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center; color: #2c3e50;">🏪 Aplikasi Kasir Warung Sembako</h1>
+
+    <div class="container">
+        <!-- Panel Kiri: Daftar Produk -->
+        <div class="panel" style="flex: 2;">
+            <h2>Daftar Produk</h2>
+            <div class="grid-produk" id="katalog-produk">
+                <!-- Produk dirender lewat JS -->
+            </div>
+            
+            <hr style="margin: 30px 0; border: 1px solid #eee;">
+            
+            <!-- Form Tambah Produk Baru -->
+            <h3>Tambah / Update Produk</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 2; min-width: 150px;">
+                    <label>Nama Barang</label>
+                    <input type="text" id="input-nama" placeholder="Contoh: Beras 1kg">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 100px;">
+                    <label>Harga (Rp)</label>
+                    <input type="number" id="input-harga" placeholder="10000">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 100px;">
+                    <label>Stok Awal</label>
+                    <input type="number" id="input-stok" placeholder="50">
+                </div>
+                <div style="flex: 1; min-width: 100px; display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="simpanProduk()" style="margin-bottom: 15px;">Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Keranjang & Checkout -->
+        <div class="panel" style="flex: 1;">
+            <h2>🛒 Keranjang Belanja</h2>
+            <div id="keranjang-belanja">
+                <!-- Isi keranjang dirender lewat JS -->
+            </div>
+
+            <div class="total-box">
+                Sub Total: <br>
+                <span id="grand-total" style="color: var(--success);">Rp 0</span>
+            </div>
+
+            <button class="btn btn-success" onclick="prosesCheckout()">Bayar & Checkout</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. Inisialisasi Data dari LocalStorage (Penyimpanan Browser)
+        let produk = JSON.parse(localStorage.getItem('produk_sembako')) || [
+            { id: 1, nama: "Beras Pandan Wangi 5kg", harga: 75000, stok: 20 },
+            { id: 2, nama: "Minyak Goreng 2L", harga: 32000, stok: 15 },
+            { id: 3, nama: "Gula Pasir 1kg", harga: 16000, stok: 30 },
+            { id: 4, nama: "Telur Ayam 1kg", harga: 28000, stok: 10 }
+        ];
+        
+        let keranjang = [];
+
+        // 2. Fungsi untuk menyimpan data permanen ke browser
+        function simpanData() {
+            localStorage.setItem('produk_sembako', JSON.stringify(produk));
+        }
+
+        // 3. Menampilkan Daftar Produk
+        function renderProduk() {
+            const wadah = document.getElementById('katalog-produk');
+            wadah.innerHTML = '';
+
+            produk.forEach(p => {
+                wadah.innerHTML += `
+                    <div class="card-produk">
+                        <h3 style="margin: 0 0 10px 0; font-size: 1.1em;">${p.nama}</h3>
+                        <p style="color: #666; margin: 5px 0;">Rp ${p.harga.toLocaleString('id-ID')}</p>
+                        <span class="badge">Stok: ${p.stok}</span>
+                        <button class="btn btn-primary" onclick="tambahKeKeranjang(${p.id})" ${p.stok === 0 ? 'disabled' : ''}>
+                            ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. Tambah produk baru atau update stok/harga
+        function simpanProduk() {
+            const nama = document.getElementById('input-nama').value;
+            const harga = parseInt(document.getElementById('input-harga').value);
+            const stok = parseInt(document.getElementById('input-stok').value);
+
+            if(!nama || !harga || !stok) {
+                alert("Mohon isi nama, harga, dan stok barang!");
+                return;
+            }
+
+            const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
+            if(produkLama) {
+                produkLama.harga = harga;
+                produkLama.stok += stok; // Tambah stok
+            } else {
+                const idBaru = produk.length > 0 ? Math.max(...produk.map(p => p.id)) + 1 : 1;
+                produk.push({ id: idBaru, nama, harga, stok });
+            }
+
+            simpanData();
+            renderProduk();
+            
+            // Kosongkan form
+            document.getElementById('input-nama').value = '';
+            document.getElementById('input-harga').value = '';
+            document.getElementById('input-stok').value = '';
+        }
+
+        // 5. Menambahkan ke Keranjang
+        function tambahKeKeranjang(id) {
+            const itemProduk = produk.find(p => p.id === id);
+            const itemDiKeranjang = keranjang.find(k => k.id === id);
+
+            if (itemDiKeranjang) {
+                if (itemDiKeranjang.qty < itemProduk.stok) {
+                    itemDiKeranjang.qty++;
+                } else {
+                    alert("Stok tidak mencukupi!");
+                }
+            } else {
+                if (itemProduk.stok > 0) {
+                    keranjang.push({ ...itemProduk, qty: 1 });
+                }
+            }
+            renderKeranjang();
+        }
+
+        // 6. Hapus dari keranjang
+        function hapusDariKeranjang(id) {
+            keranjang = keranjang.filter(k => k.id !== id);
+            renderKeranjang();
+        }
+
+        // 7. Menampilkan Keranjang & Hitung Sub Total
+        function renderKeranjang() {
+            const wadah = document.getElementById('keranjang-belanja');
+            let grandTotal = 0;
+            wadah.innerHTML = '';
+
+            if(keranjang.length === 0) {
+                wadah.innerHTML = '<p style="color: #999; text-align: center;">Keranjang masih kosong</p>';
+            }
+
+            keranjang.forEach(k => {
+                const subTotal = k.harga * k.qty;
+                grandTotal += subTotal;
+
+                wadah.innerHTML += `
+                    <div class="keranjang-item">
+                        <div style="flex: 2;">
+                            <strong style="display:block;">${k.nama}</strong>
+                            <small>${k.qty} x Rp ${k.harga.toLocaleString('id-ID')}</small>
+                        </div>
+                        <div style="flex: 1; text-align: right; font-weight: bold;">
+                            Rp ${subTotal.toLocaleString('id-ID')}
+                        </div>
+                        <button class="btn-danger" onclick="hapusDariKeranjang(${k.id})" style="margin-left: 10px;">X</button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('grand-total').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+        }
+
+        // 8. Proses Checkout
+        function prosesCheckout() {
+            if(keranjang.length === 0) {
+                alert("Pilih barang terlebih dahulu!");
+                return;
+            }
+
+            // Kurangi stok di database (LocalStorage)
+            keranjang.forEach(itemKeranjang => {
+                const itemDb = produk.find(p => p.id === itemKeranjang.id);
+                if (itemDb) {
+                    itemDb.stok -= itemKeranjang.qty;
+                }
+            });
+
+            simpanData(); // Simpan stok terbaru ke browser
+            keranjang = []; // Kosongkan keranjang
+            
+            renderProduk(); // Update tampilan stok
+            renderKeranjang(); // Update tampilan keranjang
+
+            alert("Pembayaran Berhasil! Stok barang telah otomatis dikurangi.");
+        }
+
+        // Jalankan saat pertama kali halaman dibuka
+        renderProduk();
+        renderKeranjang();
+    </script>
+</body>
+</html>
