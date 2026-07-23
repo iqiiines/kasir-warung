@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kasir Warung Sembako</title>
+    <!-- Import Appwrite Web SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
     <style>
         :root {
             --primary: #007bff;
@@ -65,7 +67,7 @@
         }
         .btn-primary { background-color: var(--primary); }
         .btn-success { background-color: var(--success); font-size: 1.1em; padding: 15px; }
-        .btn-danger { background-color: var(--danger); width: auto; padding: 5px 10px;}
+        .btn-danger { background-color: var(--danger); }
         .btn-warning { background-color: var(--warning); color: #333; }
         .keranjang-item {
             display: flex;
@@ -109,10 +111,7 @@
             display: flex;
             gap: 5px;
         }
-        .flex-buttons .btn {
-            margin-top: 10px;
-        }
-        /* Style khusus untuk kolom pencarian */
+        .flex-buttons .btn { margin-top: 10px; }
         .search-bar {
             width: 100%;
             padding: 10px;
@@ -138,16 +137,14 @@
         <div class="panel" style="flex: 2;">
             <h2>Daftar Produk</h2>
             
-            <!-- Fitur Baru: Kolom Pencarian -->
             <input type="text" id="input-cari" class="search-bar" placeholder="🔍 Cari nama barang di sini..." onkeyup="renderProduk()">
 
-            <div class="grid-produk" id="katalog-produk">
-                <!-- Produk dirender lewat JS -->
-            </div>
+            <!-- Status loading -->
+            <div id="status-loading" style="text-align: center; color: #666; margin-bottom: 15px;">Mengambil data dari database...</div>
+            <div class="grid-produk" id="katalog-produk"></div>
             
             <hr style="margin: 30px 0; border: 1px solid #eee;">
             
-            <!-- Form Tambah Produk Baru -->
             <h3>Tambah / Update Produk</h3>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <div class="form-group" style="flex: 2; min-width: 150px;">
@@ -172,49 +169,66 @@
         <!-- Panel Kanan: Keranjang & Checkout -->
         <div class="panel" style="flex: 1;">
             <h2>🛒 Keranjang Belanja</h2>
-            <div id="keranjang-belanja">
-                <!-- Isi keranjang dirender lewat JS -->
-            </div>
-
+            <div id="keranjang-belanja"></div>
             <div class="total-box">
                 Sub Total: <br>
                 <span id="grand-total" style="color: var(--success);">Rp 0</span>
             </div>
-
-            <button class="btn btn-success" onclick="prosesCheckout()">Bayar & Checkout</button>
+            <button class="btn btn-success" onclick="prosesCheckout()" id="btn-checkout">Bayar & Checkout</button>
         </div>
     </div>
 
     <script>
-        // 1. Inisialisasi Data 
-        let produk = JSON.parse(localStorage.getItem('produk_sembako')) || [
-            { id: 1, nama: "Beras Pandan Wangi 5kg", harga: 75000, stok: 20 },
-            { id: 2, nama: "Minyak Goreng 2L", harga: 32000, stok: 15 },
-            { id: 3, nama: "Gula Pasir 1kg", harga: 16000, stok: 30 },
-            { id: 4, nama: "Telur Ayam 1kg", harga: 28000, stok: 10 }
-        ];
+        // ==========================================
+        // 1. KONFIGURASI APPWRITE DATABASE
+        // ==========================================
+        const { Client, Databases, ID } = Appwrite;
         
-        let keranjang = [];
-        let editModeId = null; // Variabel untuk mendeteksi mode edit
+        // Konfigurasi sesuai ID yang Anda berikan
+        const client = new Client()
+            .setEndpoint('https://cloud.appwrite.io/v1') 
+            .setProject('6a61e7d5000cfa72a4ac'); 
 
-        function simpanData() {
-            localStorage.setItem('produk_sembako', JSON.stringify(produk));
+        const databases = new Databases(client);
+        const databaseId = '6a61e7f20038f7c3b53e'; 
+        const collectionId = 'produk'; 
+
+        let produk = [];
+        let keranjang = [];
+        let editModeId = null; 
+
+        // ==========================================
+        // 2. MENGAMBIL DATA (READ)
+        // ==========================================
+        async function muatData() {
+            document.getElementById('status-loading').style.display = 'block';
+            document.getElementById('status-loading').innerText = "Mengambil data...";
+            try {
+                const response = await databases.listDocuments(databaseId, collectionId);
+                produk = response.documents; 
+                
+                document.getElementById('status-loading').style.display = 'none';
+                renderProduk();
+            } catch (error) {
+                console.error("Error Appwrite:", error);
+                document.getElementById('status-loading').innerText = "Gagal mengambil data. Pastikan Permissions di tabel Appwrite sudah diset 'Any'.";
+            }
         }
 
-        // 3. Menampilkan Daftar Produk (Ditambah Logika Pencarian)
+        // ==========================================
+        // 3. MENAMPILKAN PRODUK & PENCARIAN (UI)
+        // ==========================================
         function renderProduk() {
             const wadah = document.getElementById('katalog-produk');
             wadah.innerHTML = '';
-
-            // Ambil kata kunci dari kolom pencarian, jadikan huruf kecil semua agar mudah dicocokkan
+            
             const inputCari = document.getElementById('input-cari');
             const kataKunci = inputCari ? inputCari.value.toLowerCase() : "";
-
-            // Filter produk berdasarkan kata kunci pencarian
+            
             const produkTampil = produk.filter(p => p.nama.toLowerCase().includes(kataKunci));
 
             if (produkTampil.length === 0) {
-                wadah.innerHTML = '<p style="color: #999; grid-column: 1 / -1; text-align: center;">Barang tidak ditemukan.</p>';
+                wadah.innerHTML = '<p style="color: #999; grid-column: 1 / -1; text-align: center;">Tidak ada barang yang cocok.</p>';
                 return;
             }
 
@@ -225,40 +239,80 @@
                         <p style="color: #666; margin: 5px 0;">Rp ${p.harga.toLocaleString('id-ID')}</p>
                         <span class="badge">Stok: ${p.stok}</span>
                         
+                        <button class="btn btn-primary" onclick="tambahKeKeranjang('${p.$id}')" ${p.stok === 0 ? 'disabled' : ''}>
+                            ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
+                        </button>
+                        
                         <div class="flex-buttons">
-                            <button class="btn btn-primary" style="flex: 2;" onclick="tambahKeKeranjang(${p.id})" ${p.stok === 0 ? 'disabled' : ''}>
-                                ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
-                            </button>
-                            <button class="btn btn-warning" style="flex: 1;" onclick="editProduk(${p.id})">
-                                Edit
-                            </button>
+                            <button class="btn btn-warning" style="flex: 1;" onclick="editProduk('${p.$id}')">Edit</button>
+                            <button class="btn btn-danger" style="flex: 1; color: white;" onclick="hapusProduk('${p.$id}')">Hapus</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        // 4. Fitur Baru: Tarik data ke form untuk di-edit
+        // ==========================================
+        // 4. SIMPAN & UPDATE DATA (CREATE / UPDATE)
+        // ==========================================
+        async function simpanProduk() {
+            const nama = document.getElementById('input-nama').value;
+            const harga = parseInt(document.getElementById('input-harga').value);
+            const stok = parseInt(document.getElementById('input-stok').value);
+
+            if(!nama || !harga || isNaN(stok)) {
+                alert("Mohon isi nama, harga, dan stok barang!");
+                return;
+            }
+
+            document.getElementById('btn-simpan').innerText = "Menyimpan...";
+            document.getElementById('btn-simpan').disabled = true;
+
+            try {
+                if (editModeId !== null) {
+                    await databases.updateDocument(databaseId, collectionId, editModeId, {
+                        nama: nama, harga: harga, stok: stok
+                    });
+                    alert("Data berhasil diupdate!");
+                } else {
+                    const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
+                    if(produkLama) {
+                        await databases.updateDocument(databaseId, collectionId, produkLama.$id, {
+                            harga: harga, stok: produkLama.stok + stok
+                        });
+                    } else {
+                        await databases.createDocument(databaseId, collectionId, ID.unique(), {
+                            nama: nama, harga: harga, stok: stok
+                        });
+                    }
+                }
+                batalEdit();
+                await muatData(); 
+            } catch (error) {
+                console.error(error);
+                alert("Gagal menyimpan data. Pastikan Permissions di Appwrite sudah diset.");
+            }
+
+            document.getElementById('btn-simpan').innerText = "Simpan";
+            document.getElementById('btn-simpan').disabled = false;
+        }
+
         function editProduk(id) {
-            const item = produk.find(p => p.id === id);
+            const item = produk.find(p => p.$id === id);
             if (item) {
                 document.getElementById('input-nama').value = item.nama;
                 document.getElementById('input-harga').value = item.harga;
                 document.getElementById('input-stok').value = item.stok;
                 
-                // Ubah tampilan tombol
                 document.getElementById('btn-simpan').innerText = "Update";
                 document.getElementById('btn-simpan').classList.replace('btn-primary', 'btn-warning');
-                document.getElementById('btn-batal').style.display = "block"; // Munculkan tombol batal
+                document.getElementById('btn-batal').style.display = "block"; 
                 
-                editModeId = id; // Tandai bahwa kita sedang dalam mode edit
-                
-                // Scroll sedikit ke bawah agar form terlihat
+                editModeId = id; 
                 document.getElementById('input-nama').focus();
             }
         }
 
-        // 5. Fitur Baru: Batal Edit
         function batalEdit() {
             document.getElementById('input-nama').value = '';
             document.getElementById('input-harga').value = '';
@@ -271,51 +325,32 @@
             editModeId = null;
         }
 
-        // 6. Simpan Produk (Ditambahkan logika untuk Update)
-        function simpanProduk() {
-            const nama = document.getElementById('input-nama').value;
-            const harga = parseInt(document.getElementById('input-harga').value);
-            const stok = parseInt(document.getElementById('input-stok').value);
-
-            if(!nama || !harga || isNaN(stok)) {
-                alert("Mohon isi nama, harga, dan stok barang!");
-                return;
-            }
-
-            if (editModeId !== null) {
-                // MODE UPDATE: Ubah data barang yang ada
-                const index = produk.findIndex(p => p.id === editModeId);
-                if (index !== -1) {
-                    produk[index].nama = nama;
-                    produk[index].harga = harga;
-                    produk[index].stok = stok;
-                }
-                alert("Data produk berhasil diupdate!");
-            } else {
-                // MODE TAMBAH BARU
-                const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
-                if(produkLama) {
-                    // Jika nama sama, otomatis tambah stok
-                    produkLama.harga = harga;
-                    produkLama.stok += stok; 
-                } else {
-                    const idBaru = produk.length > 0 ? Math.max(...produk.map(p => p.id)) + 1 : 1;
-                    produk.push({ id: idBaru, nama, harga, stok });
+        // ==========================================
+        // 5. FITUR HAPUS DATA (DELETE)
+        // ==========================================
+        async function hapusProduk(id) {
+            const item = produk.find(p => p.$id === id);
+            if(confirm(`Yakin ingin menghapus secara permanen produk "${item.nama}"?`)) {
+                try {
+                    await databases.deleteDocument(databaseId, collectionId, id);
+                    
+                    keranjang = keranjang.filter(k => k.$id !== id);
+                    renderKeranjang();
+                    
+                    await muatData(); 
+                } catch (error) {
+                    console.error(error);
+                    alert("Gagal menghapus data.");
                 }
             }
-
-            simpanData();
-            renderProduk();
-            batalEdit(); // Kembalikan form ke keadaan semula (kosong)
-            
-            // Render ulang keranjang jika ada barang di keranjang yang harganya berubah
-            renderKeranjang();
         }
 
-        // 7. Menambahkan ke Keranjang
+        // ==========================================
+        // 6. LOGIKA KERANJANG & CHECKOUT
+        // ==========================================
         function tambahKeKeranjang(id) {
-            const itemProduk = produk.find(p => p.id === id);
-            const itemDiKeranjang = keranjang.find(k => k.id === id);
+            const itemProduk = produk.find(p => p.$id === id);
+            const itemDiKeranjang = keranjang.find(k => k.$id === id);
 
             if (itemDiKeranjang) {
                 if (itemDiKeranjang.qty < itemProduk.stok) {
@@ -325,21 +360,17 @@
                 }
             } else {
                 if (itemProduk.stok > 0) {
-                    // Buat copy data produk agar jika harga diubah saat ada di keranjang,
-                    // harga di keranjang menyesuaikan harga terbaru.
                     keranjang.push({ ...itemProduk, qty: 1 });
                 }
             }
             renderKeranjang();
         }
 
-        // 8. Hapus dari keranjang
         function hapusDariKeranjang(id) {
-            keranjang = keranjang.filter(k => k.id !== id);
+            keranjang = keranjang.filter(k => k.$id !== id);
             renderKeranjang();
         }
 
-        // 9. Menampilkan Keranjang & Hitung Sub Total
         function renderKeranjang() {
             const wadah = document.getElementById('keranjang-belanja');
             let grandTotal = 0;
@@ -350,10 +381,8 @@
             }
 
             keranjang.forEach(k => {
-                // Ambil harga terbaru dari database jika harganya baru diedit
-                const produkAsli = produk.find(p => p.id === k.id);
+                const produkAsli = produk.find(p => p.$id === k.$id);
                 const hargaGunakan = produkAsli ? produkAsli.harga : k.harga;
-
                 const subTotal = hargaGunakan * k.qty;
                 grandTotal += subTotal;
 
@@ -366,39 +395,48 @@
                         <div style="flex: 1; text-align: right; font-weight: bold;">
                             Rp ${subTotal.toLocaleString('id-ID')}
                         </div>
-                        <button class="btn-danger" onclick="hapusDariKeranjang(${k.id})" style="margin-left: 10px;">X</button>
+                        <button class="btn-danger" onclick="hapusDariKeranjang('${k.$id}')" style="margin-left: 10px; border:none; border-radius:3px; padding:4px 8px; color: white;">X</button>
                     </div>
                 `;
             });
-
             document.getElementById('grand-total').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
         }
 
-        // 10. Proses Checkout
-        function prosesCheckout() {
+        async function prosesCheckout() {
             if(keranjang.length === 0) {
                 alert("Pilih barang terlebih dahulu!");
                 return;
             }
 
-            keranjang.forEach(itemKeranjang => {
-                const itemDb = produk.find(p => p.id === itemKeranjang.id);
-                if (itemDb) {
-                    itemDb.stok -= itemKeranjang.qty;
+            const btnCheckout = document.getElementById('btn-checkout');
+            btnCheckout.innerText = "Memproses...";
+            btnCheckout.disabled = true;
+
+            try {
+                for (const itemKeranjang of keranjang) {
+                    const itemDb = produk.find(p => p.$id === itemKeranjang.$id);
+                    if (itemDb) {
+                        const stokBaru = itemDb.stok - itemKeranjang.qty;
+                        await databases.updateDocument(databaseId, collectionId, itemKeranjang.$id, {
+                            stok: stokBaru
+                        });
+                    }
                 }
-            });
+                keranjang = []; 
+                alert("Pembayaran Berhasil! Stok barang telah otomatis dikurangi di database cloud.");
+                await muatData(); 
+                renderKeranjang(); 
+            } catch (error) {
+                console.error("Gagal Checkout:", error);
+                alert("Gagal memproses transaksi ke database.");
+            }
 
-            simpanData(); 
-            keranjang = []; 
-            
-            renderProduk(); 
-            renderKeranjang(); 
-
-            alert("Pembayaran Berhasil! Stok barang telah otomatis dikurangi.");
+            btnCheckout.innerText = "Bayar & Checkout";
+            btnCheckout.disabled = false;
         }
 
-        // Jalankan saat pertama kali halaman dibuka
-        renderProduk();
+        // Inisialisasi: Tarik data saat pertama kali dimuat
+        muatData();
         renderKeranjang();
     </script>
 </body>
