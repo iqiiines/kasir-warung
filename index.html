@@ -1,308 +1,297 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kasir Warung Sembako</title>
-    <script type="text/javascript" src="https://ff.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=oCMBBZbkwBKdyOTjlQe45rvsEINSqdtMSQ4yV4OFYhQus0BWtx3KLSk3qCwBGSCL6_q6rsmEhzT1VrJ0VZS6z6lKfdbv3WRyzYztZMrR06TrXo8EG9C1rYuPpuczLAWNNCpp2OXDd76lwuEArb2jrmpy5Q4Fuz6Lw7y1lXpSmizt6BwSueiNYuU-rBPDS7kdjzCFn-MpNAhWn3RBjvmDIDFups6-L-7D5FL1YgHqwygFQMzIqstdowcVgcdIs9Zjb7xVyVIUifhhZ8hm7j5te8WI6_JFaBsg8CCFxmhavwFDmHLoZOPyiydUfD7_Z2_j" charset="UTF-8"></script><style>
-        :root {
-            --primary: #007bff;
-            --success: #28a745;
-            --danger: #dc3545;
-            --background: #f4f7f6;
-            --card-bg: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        h1, h2 { margin-top: 0; }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .panel {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            flex: 1;
-            min-width: 300px;
-        }
-        .grid-produk {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        .card-produk {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            background: #fff;
-            transition: transform 0.2s;
-        }
-        .card-produk:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .btn-primary { background-color: var(--primary); }
-        .btn-success { background-color: var(--success); font-size: 1.1em; padding: 15px; }
-        .btn-danger { background-color: var(--danger); width: auto; padding: 5px 10px;}
-        .keranjang-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-        }
-        .total-box {
-            font-size: 1.5em;
-            font-weight: bold;
-            text-align: right;
-            margin: 20px 0;
-            padding-top: 20px;
-            border-top: 2px dashed #ccc;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            background: #eee;
-            color: #333;
-        }
-    </style>
-</head>
-<body>
+import tkinter as tk
+from tkinter import scrolledtext, messagebox, filedialog
+import sqlite3
+import csv
 
-    <h1 style="text-align: center; color: #2c3e50;">🏪 Aplikasi Kasir Warung Sembako</h1>
+# ==========================================
+# 1. DATABASE SETUP
+# ==========================================
+def setup_database():
+    conn = sqlite3.connect('warung.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS produk 
+                      (id_produk INTEGER PRIMARY KEY AUTOINCREMENT, 
+                       nama_produk TEXT, harga_jual INTEGER, stok INTEGER)''')
+    conn.commit()
+    conn.close()
 
-    <div class="container">
-        <!-- Panel Kiri: Daftar Produk -->
-        <div class="panel" style="flex: 2;">
-            <h2>Daftar Produk</h2>
-            <div class="grid-produk" id="katalog-produk">
-                <!-- Produk dirender lewat JS -->
-            </div>
-            
-            <hr style="margin: 30px 0; border: 1px solid #eee;">
-            
-            <!-- Form Tambah Produk Baru -->
-            <h3>Tambah / Update Produk</h3>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div class="form-group" style="flex: 2; min-width: 150px;">
-                    <label>Nama Barang</label>
-                    <input type="text" id="input-nama" placeholder="Contoh: Beras 1kg">
-                </div>
-                <div class="form-group" style="flex: 1; min-width: 100px;">
-                    <label>Harga (Rp)</label>
-                    <input type="number" id="input-harga" placeholder="10000">
-                </div>
-                <div class="form-group" style="flex: 1; min-width: 100px;">
-                    <label>Stok Awal</label>
-                    <input type="number" id="input-stok" placeholder="50">
-                </div>
-                <div style="flex: 1; min-width: 100px; display: flex; align-items: flex-end;">
-                    <button class="btn btn-primary" onclick="simpanProduk()" style="margin-bottom: 15px;">Simpan</button>
-                </div>
-            </div>
-        </div>
+# ==========================================
+# 2. LOGIKA APLIKASI
+# ==========================================
+def cari_barang():
+    kata_kunci = entry_cari.get()
+    conn = sqlite3.connect('warung.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_produk, nama_produk, harga_jual, stok FROM produk WHERE nama_produk LIKE ?", ('%' + kata_kunci + '%',))
+    hasil = cursor.fetchall()
+    conn.close()
+    
+    textbox_hasil.config(state="normal")
+    textbox_hasil.delete("1.0", tk.END)
+    
+    if hasil:
+        for item in hasil:
+            id_p, nama, harga, stok = item
+            total_nilai = harga * stok
+            teks = f"ID: {id_p} | {nama}\n"
+            teks += f"Harga: Rp {harga:,}\n"
+            teks += f"Stok: {stok} pcs\n"
+            teks += f"Total Nilai: Rp {total_nilai:,}\n"
+            teks += f"{'-'*25}\n"
+            textbox_hasil.insert(tk.END, teks)
+    else:
+        textbox_hasil.insert(tk.END, "Barang tidak ditemukan!")
+    textbox_hasil.config(state="disabled")
 
-        <!-- Panel Kanan: Keranjang & Checkout -->
-        <div class="panel" style="flex: 1;">
-            <h2>🛒 Keranjang Belanja</h2>
-            <div id="keranjang-belanja">
-                <!-- Isi keranjang dirender lewat JS -->
-            </div>
+def update_barang():
+    id_p = entry_id.get()
+    stok_baru = entry_stok_update.get()
+    
+    if not id_p or not stok_baru:
+        messagebox.showerror("Error", "ID dan Stok Baru harus diisi!")
+        return
 
-            <div class="total-box">
-                Sub Total: <br>
-                <span id="grand-total" style="color: var(--success);">Rp 0</span>
-            </div>
+    try:
+        conn = sqlite3.connect('warung.db')
+        cursor = conn.cursor()
+        cursor.execute("UPDATE produk SET stok = ? WHERE id_produk = ?", (int(stok_baru), int(id_p)))
+        conn.commit()
+        conn.close()
+        messagebox.showinfo("Sukses", "Stok berhasil diupdate!")
+        cari_barang() # Refresh tampilan
+        entry_id.delete(0, tk.END)
+        entry_stok_update.delete(0, tk.END)
+    except Exception as e:
+        messagebox.showerror("Error", f"Gagal update: {e}")
 
-            <button class="btn btn-success" onclick="prosesCheckout()">Bayar & Checkout</button>
-        </div>
-    </div>
-
-    <script>
-        // 1. Inisialisasi Data dari LocalStorage (Penyimpanan Browser)
-        let produk = JSON.parse(localStorage.getItem('produk_sembako')) || [
-            { id: 1, nama: "Beras Pandan Wangi 5kg", harga: 75000, stok: 20 },
-            { id: 2, nama: "Minyak Goreng 2L", harga: 32000, stok: 15 },
-            { id: 3, nama: "Gula Pasir 1kg", harga: 16000, stok: 30 },
-            { id: 4, nama: "Telur Ayam 1kg", harga: 28000, stok: 10 }
-        ];
+def hapus_barang():
+    id_p = entry_id.get()
+    
+    if not id_p:
+        messagebox.showerror("Error", "Masukkan ID barang yang ingin dihapus!")
+        return
         
-        let keranjang = [];
-
-        // 2. Fungsi untuk menyimpan data permanen ke browser
-        function simpanData() {
-            localStorage.setItem('produk_sembako', JSON.stringify(produk));
-        }
-
-        // 3. Menampilkan Daftar Produk
-        function renderProduk() {
-            const wadah = document.getElementById('katalog-produk');
-            wadah.innerHTML = '';
-
-            produk.forEach(p => {
-                wadah.innerHTML += `
-                    <div class="card-produk">
-                        <h3 style="margin: 0 0 10px 0; font-size: 1.1em;">${p.nama}</h3>
-                        <p style="color: #666; margin: 5px 0;">Rp ${p.harga.toLocaleString('id-ID')}</p>
-                        <span class="badge">Stok: ${p.stok}</span>
-                        <button class="btn btn-primary" onclick="tambahKeKeranjang(${p.id})" ${p.stok === 0 ? 'disabled' : ''}>
-                            ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
-                        </button>
-                    </div>
-                `;
-            });
-        }
-
-        // 4. Tambah produk baru atau update stok/harga
-        function simpanProduk() {
-            const nama = document.getElementById('input-nama').value;
-            const harga = parseInt(document.getElementById('input-harga').value);
-            const stok = parseInt(document.getElementById('input-stok').value);
-
-            if(!nama || !harga || !stok) {
-                alert("Mohon isi nama, harga, dan stok barang!");
-                return;
-            }
-
-            const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
-            if(produkLama) {
-                produkLama.harga = harga;
-                produkLama.stok += stok; // Tambah stok
-            } else {
-                const idBaru = produk.length > 0 ? Math.max(...produk.map(p => p.id)) + 1 : 1;
-                produk.push({ id: idBaru, nama, harga, stok });
-            }
-
-            simpanData();
-            renderProduk();
+    # Konfirmasi popup agar tidak sengaja terhapus
+    yakin = messagebox.askyesno("Konfirmasi Hapus", f"Apakah Anda yakin ingin menghapus barang dengan ID {id_p}?")
+    if yakin:
+        try:
+            conn = sqlite3.connect('warung.db')
+            cursor = conn.cursor()
             
-            // Kosongkan form
-            document.getElementById('input-nama').value = '';
-            document.getElementById('input-harga').value = '';
-            document.getElementById('input-stok').value = '';
-        }
-
-        // 5. Menambahkan ke Keranjang
-        function tambahKeKeranjang(id) {
-            const itemProduk = produk.find(p => p.id === id);
-            const itemDiKeranjang = keranjang.find(k => k.id === id);
-
-            if (itemDiKeranjang) {
-                if (itemDiKeranjang.qty < itemProduk.stok) {
-                    itemDiKeranjang.qty++;
-                } else {
-                    alert("Stok tidak mencukupi!");
-                }
-            } else {
-                if (itemProduk.stok > 0) {
-                    keranjang.push({ ...itemProduk, qty: 1 });
-                }
-            }
-            renderKeranjang();
-        }
-
-        // 6. Hapus dari keranjang
-        function hapusDariKeranjang(id) {
-            keranjang = keranjang.filter(k => k.id !== id);
-            renderKeranjang();
-        }
-
-        // 7. Menampilkan Keranjang & Hitung Sub Total
-        function renderKeranjang() {
-            const wadah = document.getElementById('keranjang-belanja');
-            let grandTotal = 0;
-            wadah.innerHTML = '';
-
-            if(keranjang.length === 0) {
-                wadah.innerHTML = '<p style="color: #999; text-align: center;">Keranjang masih kosong</p>';
-            }
-
-            keranjang.forEach(k => {
-                const subTotal = k.harga * k.qty;
-                grandTotal += subTotal;
-
-                wadah.innerHTML += `
-                    <div class="keranjang-item">
-                        <div style="flex: 2;">
-                            <strong style="display:block;">${k.nama}</strong>
-                            <small>${k.qty} x Rp ${k.harga.toLocaleString('id-ID')}</small>
-                        </div>
-                        <div style="flex: 1; text-align: right; font-weight: bold;">
-                            Rp ${subTotal.toLocaleString('id-ID')}
-                        </div>
-                        <button class="btn-danger" onclick="hapusDariKeranjang(${k.id})" style="margin-left: 10px;">X</button>
-                    </div>
-                `;
-            });
-
-            document.getElementById('grand-total').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
-        }
-
-        // 8. Proses Checkout
-        function prosesCheckout() {
-            if(keranjang.length === 0) {
-                alert("Pilih barang terlebih dahulu!");
-                return;
-            }
-
-            // Kurangi stok di database (LocalStorage)
-            keranjang.forEach(itemKeranjang => {
-                const itemDb = produk.find(p => p.id === itemKeranjang.id);
-                if (itemDb) {
-                    itemDb.stok -= itemKeranjang.qty;
-                }
-            });
-
-            simpanData(); // Simpan stok terbaru ke browser
-            keranjang = []; // Kosongkan keranjang
+            # Cek dulu nama barangnya untuk notifikasi
+            cursor.execute("SELECT nama_produk FROM produk WHERE id_produk = ?", (int(id_p),))
+            barang = cursor.fetchone()
             
-            renderProduk(); // Update tampilan stok
-            renderKeranjang(); // Update tampilan keranjang
+            if barang:
+                cursor.execute("DELETE FROM produk WHERE id_produk = ?", (int(id_p),))
+                conn.commit()
+                messagebox.showinfo("Sukses", f"Barang '{barang[0]}' berhasil dihapus!")
+                cari_barang() # Refresh tampilan
+                entry_id.delete(0, tk.END)
+                entry_stok_update.delete(0, tk.END)
+            else:
+                messagebox.showerror("Error", "ID barang tidak ditemukan!")
+                
+            conn.close()
+        except Exception as e:
+            messagebox.showerror("Error", f"Gagal menghapus: {e}")
 
-            alert("Pembayaran Berhasil! Stok barang telah otomatis dikurangi.");
-        }
+def tambah_barang():
+    win = tk.Toplevel(jendela)
+    win.title("Tambah Produk")
+    win.geometry("300x320")
+    
+    tk.Label(win, text="Nama Barang:", font=("Arial", 11)).pack(pady=2)
+    e_nama = tk.Entry(win, font=("Arial", 11))
+    e_nama.pack(pady=2)
+    
+    tk.Label(win, text="Harga Jual (Rp):", font=("Arial", 11)).pack(pady=2)
+    e_harga = tk.Entry(win, font=("Arial", 11))
+    e_harga.pack(pady=2)
+    
+    tk.Label(win, text="Stok Awal:", font=("Arial", 11)).pack(pady=2)
+    e_stok = tk.Entry(win, font=("Arial", 11))
+    e_stok.pack(pady=2)
+    
+    def simpan():
+        if not e_nama.get() or not e_harga.get() or not e_stok.get():
+            messagebox.showerror("Error", "Semua kolom harus diisi!")
+            return
+        try:
+            conn = sqlite3.connect('warung.db')
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO produk (nama_produk, harga_jual, stok) VALUES (?, ?, ?)", 
+                           (e_nama.get(), int(e_harga.get()), int(e_stok.get())))
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Info", "Barang berhasil ditambah!")
+            win.destroy()
+            cari_barang()
+        except ValueError:
+            messagebox.showerror("Error", "Harga dan Stok harus berupa angka!")
+        
+    tk.Button(win, text="Simpan", command=simpan, bg="green", fg="white", font=("Arial", 11, "bold"), width=12).pack(pady=15)
 
-        // Jalankan saat pertama kali halaman dibuka
-        renderProduk();
-        renderKeranjang();
-    </script>
-</body>
-</html>
+# ==========================================
+# FITUR BARU: EKSPOR DATA KE CSV
+# ==========================================
+def ekspor_csv():
+    conn = sqlite3.connect('warung.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_produk, nama_produk, harga_jual, stok FROM produk")
+    hasil = cursor.fetchall()
+    conn.close()
+
+    if not hasil:
+        messagebox.showwarning("Peringatan", "Tidak ada data produk untuk diekspor!")
+        return
+
+    # Membuka jendela dialog untuk memilih lokasi simpan file
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        title="Simpan Laporan Stok Barang",
+        initialfile="Laporan_Stok_Sembako.csv"
+    )
+
+    if file_path:
+        try:
+            with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                # Menulis Header Tabel
+                writer.writerow(['ID Produk', 'Nama Produk', 'Harga Jual', 'Stok Tersisa', 'Total Nilai Aset'])
+                
+                # Menulis Isi Data
+                for row in hasil:
+                    id_p, nama, harga, stok = row
+                    total_nilai = harga * stok
+                    writer.writerow([id_p, nama, harga, stok, total_nilai])
+                    
+            messagebox.showinfo("Sukses", f"Data berhasil diekspor ke:\n{file_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Gagal mengekspor data: {e}")
+
+# ==========================================
+# 3. FITUR TAMBAHAN: CHECKOUT (PENJUALAN)
+# ==========================================
+def checkout_barang():
+    id_p = entry_checkout_id.get()
+    jumlah_beli = entry_checkout_qty.get()
+    
+    if not id_p or not jumlah_beli:
+        messagebox.showerror("Error", "ID Barang dan Jumlah Beli harus diisi!")
+        return
+    
+    try:
+        id_p = int(id_p)
+        jumlah_beli = int(jumlah_beli)
+        
+        if jumlah_beli <= 0:
+            messagebox.showerror("Error", "Jumlah beli harus lebih dari 0!")
+            return
+
+        conn = sqlite3.connect('warung.db')
+        cursor = conn.cursor()
+        
+        # Ambil data produk berdasarkan ID
+        cursor.execute("SELECT nama_produk, harga_jual, stok FROM produk WHERE id_produk = ?", (id_p,))
+        barang = cursor.fetchone()
+        
+        if not barang:
+            messagebox.showerror("Error", "ID barang tidak ditemukan!")
+            conn.close()
+            return
+
+        nama, harga, stok_sekarang = barang
+
+        # Validasi kecukupan stok
+        if stok_sekarang < jumlah_beli:
+            messagebox.showerror("Stok Tidak Cukup", f"Stok '{nama}' hanya tersisa {stok_sekarang} pcs!")
+            conn.close()
+            return
+
+        # Hitung total belanja
+        total_harga = harga * jumlah_beli
+        stok_baru = stok_sekarang - jumlah_beli
+
+        # Kurangi stok di database
+        cursor.execute("UPDATE produk SET stok = ? WHERE id_produk = ?", (stok_baru, id_p))
+        conn.commit()
+        conn.close()
+
+        # Tampilkan struk/notifikasi transaksi
+        detail_nota = (
+            f"=== TRANSAKSI BERHASIL ===\n\n"
+            f"Nama Barang : {nama}\n"
+            f"Harga Satuan : Rp {harga:,}\n"
+            f"Jumlah Beli  : {jumlah_beli} pcs\n"
+            f"---------------------------\n"
+            f"Total Bayar  : Rp {total_harga:,}\n\n"
+            f"Sisa Stok    : {stok_baru} pcs"
+        )
+        messagebox.showinfo("Nota Checkout", detail_nota)
+        
+        # Reset input & refresh tampilan
+        entry_checkout_id.delete(0, tk.END)
+        entry_checkout_qty.delete(0, tk.END)
+        cari_barang()
+
+    except ValueError:
+        messagebox.showerror("Error", "ID dan Jumlah harus berupa angka bulat!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Terjadi kesalahan: {e}")
+
+# ==========================================
+# 4. TAMPILAN (GUI)
+# ==========================================
+setup_database()
+jendela = tk.Tk()
+jendela.title("Kasir Warung")
+jendela.geometry("420x820") # Ukuran jendela diperpanjang sedikit untuk ruang tombol baru
+
+# Bagian Atas: Cari, Tambah, Ekspor
+tk.Label(jendela, text="Cari Nama Barang:", font=("Arial", 12)).pack(pady=5)
+entry_cari = tk.Entry(jendela, font=("Arial", 12), width=22)
+entry_cari.pack(pady=2)
+
+tk.Button(jendela, text="Cari", command=cari_barang, bg="#4CAF50", fg="white", font=("Arial", 11, "bold"), width=15).pack(pady=4)
+tk.Button(jendela, text="+ Tambah Produk Baru", command=tambah_barang, bg="orange", fg="white", font=("Arial", 11, "bold"), width=20).pack(pady=4)
+
+# Tombol Baru untuk Ekspor
+tk.Button(jendela, text="📥 Ekspor Data ke Excel (CSV)", command=ekspor_csv, bg="#607D8B", fg="white", font=("Arial", 11, "bold"), width=25).pack(pady=4)
+
+# Bagian Tengah: Tempat Hasil Pencarian
+textbox_hasil = scrolledtext.ScrolledText(jendela, font=("Arial", 11), height=12)
+textbox_hasil.pack(pady=10, fill=tk.BOTH, expand=True)
+
+# Bagian Bawah Panel 1: Checkout (Penjualan)
+frame_checkout = tk.LabelFrame(jendela, text=" Checkout / Transaksi ", font=("Arial", 10, "bold"), padx=5, pady=8, fg="#2E7D32")
+frame_checkout.pack(pady=5, fill=tk.X, padx=10)
+
+tk.Label(frame_checkout, text="ID:", font=("Arial", 11)).pack(side=tk.LEFT, padx=2)
+entry_checkout_id = tk.Entry(frame_checkout, width=4, font=("Arial", 11))
+entry_checkout_id.pack(side=tk.LEFT, padx=4)
+
+tk.Label(frame_checkout, text="Jumlah:", font=("Arial", 11)).pack(side=tk.LEFT, padx=2)
+entry_checkout_qty = tk.Entry(frame_checkout, width=4, font=("Arial", 11))
+entry_checkout_qty.pack(side=tk.LEFT, padx=4)
+
+tk.Button(frame_checkout, text="Bayar / Checkout", command=checkout_barang, bg="#2E7D32", fg="white", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=6)
+
+# Bagian Bawah Panel 2: Kelola (Update & Delete)
+frame_edit = tk.LabelFrame(jendela, text=" Kelola Data (Masukkan ID Barang) ", font=("Arial", 10, "bold"), padx=5, pady=8)
+frame_edit.pack(pady=5, fill=tk.X, padx=10)
+
+tk.Label(frame_edit, text="ID:", font=("Arial", 11)).pack(side=tk.LEFT, padx=2)
+entry_id = tk.Entry(frame_edit, width=4, font=("Arial", 11))
+entry_id.pack(side=tk.LEFT, padx=4)
+
+tk.Label(frame_edit, text="Stok Baru:", font=("Arial", 11)).pack(side=tk.LEFT, padx=2)
+entry_stok_update = tk.Entry(frame_edit, width=4, font=("Arial", 11))
+entry_stok_update.pack(side=tk.LEFT, padx=4)
+
+# Tombol Biru untuk Update, Tombol Merah untuk Hapus
+tk.Button(frame_edit, text="Update", command=update_barang, bg="#2196F3", fg="white", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=4)
+tk.Button(frame_edit, text="Hapus", command=hapus_barang, bg="#F44336", fg="white", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=4)
+
+jendela.mainloop()
