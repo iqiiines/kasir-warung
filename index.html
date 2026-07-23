@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kasir Warung Sembako Mak Mul</title>
+    <title>Kasir Warung Sembako</title>
     <style>
         :root {
             --primary: #007bff;
@@ -112,6 +112,21 @@
         .flex-buttons .btn {
             margin-top: 10px;
         }
+        /* Style khusus untuk kolom pencarian */
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -122,6 +137,10 @@
         <!-- Panel Kiri: Daftar Produk -->
         <div class="panel" style="flex: 2;">
             <h2>Daftar Produk</h2>
+            
+            <!-- Fitur Baru: Kolom Pencarian -->
+            <input type="text" id="input-cari" class="search-bar" placeholder="🔍 Cari nama barang di sini..." onkeyup="renderProduk()">
+
             <div class="grid-produk" id="katalog-produk">
                 <!-- Produk dirender lewat JS -->
             </div>
@@ -182,12 +201,24 @@
             localStorage.setItem('produk_sembako', JSON.stringify(produk));
         }
 
-        // 3. Menampilkan Daftar Produk (Ditambah Tombol Edit)
+        // 3. Menampilkan Daftar Produk (Ditambah Logika Pencarian)
         function renderProduk() {
             const wadah = document.getElementById('katalog-produk');
             wadah.innerHTML = '';
 
-            produk.forEach(p => {
+            // Ambil kata kunci dari kolom pencarian, jadikan huruf kecil semua agar mudah dicocokkan
+            const inputCari = document.getElementById('input-cari');
+            const kataKunci = inputCari ? inputCari.value.toLowerCase() : "";
+
+            // Filter produk berdasarkan kata kunci pencarian
+            const produkTampil = produk.filter(p => p.nama.toLowerCase().includes(kataKunci));
+
+            if (produkTampil.length === 0) {
+                wadah.innerHTML = '<p style="color: #999; grid-column: 1 / -1; text-align: center;">Barang tidak ditemukan.</p>';
+                return;
+            }
+
+            produkTampil.forEach(p => {
                 wadah.innerHTML += `
                     <div class="card-produk">
                         <h3 style="margin: 0 0 10px 0; font-size: 1.1em;">${p.nama}</h3>
