@@ -99,14 +99,6 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            background: #eee;
-            color: #333;
-        }
         .flex-buttons {
             display: flex;
             gap: 5px;
@@ -137,7 +129,7 @@
 </head>
 <body>
 
-    <h1 style="text-align: center; color: #2c3e50;">🏪 Warung Sembako Mak Mul</h1>
+    <h1 style="text-align: center; color: #2c3e50;">🏪 Kasir Warung Sembako Mak Mul</h1>
 
     <div class="container">
         <!-- Panel Kiri: Daftar Produk -->
@@ -158,13 +150,9 @@
                     <label>Nama Barang</label>
                     <input type="text" id="input-nama" placeholder="Contoh: Beras 1kg">
                 </div>
-                <div class="form-group" style="flex: 1; min-width: 100px;">
+                <div class="form-group" style="flex: 1; min-width: 150px;">
                     <label>Harga (Rp)</label>
                     <input type="number" id="input-harga" placeholder="10000">
-                </div>
-                <div class="form-group" style="flex: 1; min-width: 100px;">
-                    <label>Stok Barang</label>
-                    <input type="number" id="input-stok" placeholder="50">
                 </div>
                 <div style="flex: 1; min-width: 150px; display: flex; gap: 5px; align-items: flex-end; margin-bottom: 15px;">
                     <button id="btn-simpan" class="btn btn-primary" onclick="simpanProduk()" style="margin-top: 0;">Simpan</button>
@@ -183,7 +171,6 @@
                 <span id="grand-total" style="color: var(--success);">Rp 0</span>
             </div>
 
-            <!-- Fitur Baru: Input Uang Tunai & Kembalian -->
             <div class="form-group" style="margin-top: 15px;">
                 <label style="text-align: right;">Tunai (Rp):</label>
                 <input type="number" id="input-tunai" class="input-bayar" placeholder="0" onkeyup="hitungKembalian()" onchange="hitungKembalian()">
@@ -215,7 +202,7 @@
         let produk = [];
         let keranjang = [];
         let editModeId = null; 
-        let currentGrandTotal = 0; // Menyimpan total belanja saat ini
+        let currentGrandTotal = 0; 
 
         // ==========================================
         // 2. MENGAMBIL DATA (READ)
@@ -259,11 +246,10 @@
                 wadah.innerHTML += `
                     <div class="card-produk">
                         <h3 style="margin: 0 0 10px 0; font-size: 1.1em;">${p.nama}</h3>
-                        <p style="color: #666; margin: 5px 0;">Rp ${p.harga.toLocaleString('id-ID')}</p>
-                        <span class="badge">Stok: ${p.stok}</span>
+                        <p style="color: #666; margin: 15px 0;">Rp ${p.harga.toLocaleString('id-ID')}</p>
                         
-                        <button class="btn btn-primary" onclick="tambahKeKeranjang('${p.$id}')" ${p.stok === 0 ? 'disabled' : ''}>
-                            ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
+                        <button class="btn btn-primary" onclick="tambahKeKeranjang('${p.$id}')">
+                            + Keranjang
                         </button>
                         
                         <div class="flex-buttons">
@@ -281,10 +267,9 @@
         async function simpanProduk() {
             const nama = document.getElementById('input-nama').value;
             const harga = parseInt(document.getElementById('input-harga').value);
-            const stok = parseInt(document.getElementById('input-stok').value);
 
-            if(!nama || !harga || isNaN(stok)) {
-                alert("Mohon isi nama, harga, dan stok barang!");
+            if(!nama || !harga) {
+                alert("Mohon isi nama dan harga barang!");
                 return;
             }
 
@@ -294,18 +279,18 @@
             try {
                 if (editModeId !== null) {
                     await databases.updateDocument(databaseId, collectionId, editModeId, {
-                        nama: nama, harga: harga, stok: stok
+                        nama: nama, harga: harga
                     });
                     alert("Data berhasil diupdate!");
                 } else {
                     const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
                     if(produkLama) {
                         await databases.updateDocument(databaseId, collectionId, produkLama.$id, {
-                            harga: harga, stok: produkLama.stok + stok
+                            harga: harga
                         });
                     } else {
                         await databases.createDocument(databaseId, collectionId, ID.unique(), {
-                            nama: nama, harga: harga, stok: stok
+                            nama: nama, harga: harga
                         });
                     }
                 }
@@ -313,7 +298,7 @@
                 await muatData(); 
             } catch (error) {
                 console.error(error);
-                alert("Gagal menyimpan data. Pastikan Permissions di Appwrite sudah diset.");
+                alert("Gagal menyimpan data. Pastikan Permissions di Appwrite sudah diset dan atribut stok sudah dihapus dari skema.");
             }
 
             document.getElementById('btn-simpan').innerText = "Simpan";
@@ -325,7 +310,6 @@
             if (item) {
                 document.getElementById('input-nama').value = item.nama;
                 document.getElementById('input-harga').value = item.harga;
-                document.getElementById('input-stok').value = item.stok;
                 
                 document.getElementById('btn-simpan').innerText = "Update";
                 document.getElementById('btn-simpan').classList.replace('btn-primary', 'btn-warning');
@@ -339,7 +323,6 @@
         function batalEdit() {
             document.getElementById('input-nama').value = '';
             document.getElementById('input-harga').value = '';
-            document.getElementById('input-stok').value = '';
             
             document.getElementById('btn-simpan').innerText = "Simpan";
             document.getElementById('btn-simpan').classList.replace('btn-warning', 'btn-primary');
@@ -369,22 +352,16 @@
         }
 
         // ==========================================
-        // 6. LOGIKA KERANJANG, HITUNG KEMBALIAN & CHECKOUT
+        // 6. LOGIKA KERANJANG, KEMBALIAN & CHECKOUT
         // ==========================================
         function tambahKeKeranjang(id) {
             const itemProduk = produk.find(p => p.$id === id);
             const itemDiKeranjang = keranjang.find(k => k.$id === id);
 
             if (itemDiKeranjang) {
-                if (itemDiKeranjang.qty < itemProduk.stok) {
-                    itemDiKeranjang.qty++;
-                } else {
-                    alert("Stok tidak mencukupi!");
-                }
+                itemDiKeranjang.qty++; // Tidak ada lagi batasan stok
             } else {
-                if (itemProduk.stok > 0) {
-                    keranjang.push({ ...itemProduk, qty: 1 });
-                }
+                keranjang.push({ ...itemProduk, qty: 1 });
             }
             renderKeranjang();
         }
@@ -424,16 +401,14 @@
             });
             
             document.getElementById('grand-total').innerText = 'Rp ' + currentGrandTotal.toLocaleString('id-ID');
-            hitungKembalian(); // Otomatis kalkulasi kembalian jika keranjang berubah
+            hitungKembalian(); 
         }
 
-        // Fitur Baru: Hitung Kembalian
         function hitungKembalian() {
             const tunai = parseInt(document.getElementById('input-tunai').value) || 0;
             const kembalian = tunai - currentGrandTotal;
             const spanKembalian = document.getElementById('kembalian');
 
-            // Hanya tampilkan hitungan jika ada barang di keranjang dan uang sudah diinput
             if (currentGrandTotal === 0 || tunai === 0) {
                 spanKembalian.innerText = 'Rp 0';
                 spanKembalian.style.color = "var(--danger)";
@@ -449,7 +424,7 @@
             }
         }
 
-        async function prosesCheckout() {
+        function prosesCheckout() {
             if(keranjang.length === 0) {
                 alert("Pilih barang terlebih dahulu!");
                 return;
@@ -461,36 +436,13 @@
                 return;
             }
 
-            const btnCheckout = document.getElementById('btn-checkout');
-            btnCheckout.innerText = "Memproses...";
-            btnCheckout.disabled = true;
-
-            try {
-                for (const itemKeranjang of keranjang) {
-                    const itemDb = produk.find(p => p.$id === itemKeranjang.$id);
-                    if (itemDb) {
-                        const stokBaru = itemDb.stok - itemKeranjang.qty;
-                        await databases.updateDocument(databaseId, collectionId, itemKeranjang.$id, {
-                            stok: stokBaru
-                        });
-                    }
-                }
-                
-                const kembalian = tunai - currentGrandTotal;
-                alert(`Pembayaran Berhasil!\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}\nStok barang telah otomatis dikurangi di database cloud.`);
-                
-                keranjang = []; 
-                document.getElementById('input-tunai').value = ''; // Kosongkan input tunai
-                
-                await muatData(); 
-                renderKeranjang(); 
-            } catch (error) {
-                console.error("Gagal Checkout:", error);
-                alert("Gagal memproses transaksi ke database.");
-            }
-
-            btnCheckout.innerText = "Bayar & Checkout";
-            btnCheckout.disabled = false;
+            const kembalian = tunai - currentGrandTotal;
+            alert(`Pembayaran Berhasil!\n\nSubtotal: Rp ${currentGrandTotal.toLocaleString('id-ID')}\nTunai: Rp ${tunai.toLocaleString('id-ID')}\n-----------------------\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}`);
+            
+            // Proses selesai, bersihkan keranjang
+            keranjang = []; 
+            document.getElementById('input-tunai').value = ''; 
+            renderKeranjang(); 
         }
 
         // Inisialisasi: Tarik data saat pertama kali dimuat
