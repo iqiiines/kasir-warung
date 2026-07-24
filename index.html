@@ -130,7 +130,7 @@
 </head>
 <body>
 
-    <h1 style="text-align: center; color: #2c3e50;">🏪 Aplikasi Kasir Warung Sembako</h1>
+    <h1 style="text-align: center; color: #2c3e50;">🏪 Kasir Warung Sembako Mak Mul</h1>
 
     <div class="container">
         <!-- Panel Kiri: Daftar Produk -->
@@ -184,7 +184,6 @@
         // ==========================================
         const { Client, Databases, ID } = Appwrite;
         
-        // Konfigurasi menggunakan ID dan server terbaru Anda (sgp)
         const client = new Client()
             .setEndpoint('https://sgp.cloud.appwrite.io/v1') 
             .setProject('6a61e7d5000cfa72a4ac'); 
@@ -225,7 +224,11 @@
             const inputCari = document.getElementById('input-cari');
             const kataKunci = inputCari ? inputCari.value.toLowerCase() : "";
             
+            // Filter data berdasarkan kata kunci pencarian
             const produkTampil = produk.filter(p => p.nama.toLowerCase().includes(kataKunci));
+
+            // Fitur Baru: Mengurutkan data (Sort A-Z) berdasarkan nama produk
+            produkTampil.sort((a, b) => a.nama.localeCompare(b.nama));
 
             if (produkTampil.length === 0) {
                 wadah.innerHTML = '<p style="color: #999; grid-column: 1 / -1; text-align: center;">Tidak ada barang yang cocok.</p>';
