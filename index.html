@@ -184,9 +184,9 @@
         // ==========================================
         const { Client, Databases, ID } = Appwrite;
         
-        // Konfigurasi sesuai ID yang Anda berikan
+        // Konfigurasi menggunakan ID dan server terbaru Anda (sgp)
         const client = new Client()
-            .setEndpoint('https://cloud.appwrite.io/v1') 
+            .setEndpoint('https://sgp.cloud.appwrite.io/v1') 
             .setProject('6a61e7d5000cfa72a4ac'); 
 
         const databases = new Databases(client);
