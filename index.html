@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kasir Warung Sembako</title>
+    <title>Kasir Warung Sembako Mak Mul</title>
     <!-- Import Appwrite Web SDK -->
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
     <style>
@@ -126,11 +126,18 @@
             outline: none;
             border-color: var(--primary);
         }
+        .input-bayar {
+            font-size: 1.2em;
+            text-align: right;
+            padding: 10px;
+            border: 2px solid #28a745;
+            background-color: #f8fff9;
+        }
     </style>
 </head>
 <body>
 
-    <h1 style="text-align: center; color: #2c3e50;">🏪 Kasir Warung Sembako Mak Mul</h1>
+    <h1 style="text-align: center; color: #2c3e50;">🏪 Warung Sembako Mak Mul</h1>
 
     <div class="container">
         <!-- Panel Kiri: Daftar Produk -->
@@ -170,10 +177,23 @@
         <div class="panel" style="flex: 1;">
             <h2>🛒 Keranjang Belanja</h2>
             <div id="keranjang-belanja"></div>
+            
             <div class="total-box">
                 Sub Total: <br>
                 <span id="grand-total" style="color: var(--success);">Rp 0</span>
             </div>
+
+            <!-- Fitur Baru: Input Uang Tunai & Kembalian -->
+            <div class="form-group" style="margin-top: 15px;">
+                <label style="text-align: right;">Tunai (Rp):</label>
+                <input type="number" id="input-tunai" class="input-bayar" placeholder="0" onkeyup="hitungKembalian()" onchange="hitungKembalian()">
+            </div>
+            
+            <div class="total-box" style="margin-top: 0; padding-top: 10px; border-top: none; font-size: 1.2em;">
+                Kembalian: <br>
+                <span id="kembalian" style="color: var(--danger);">Rp 0</span>
+            </div>
+
             <button class="btn btn-success" onclick="prosesCheckout()" id="btn-checkout">Bayar & Checkout</button>
         </div>
     </div>
@@ -195,6 +215,7 @@
         let produk = [];
         let keranjang = [];
         let editModeId = null; 
+        let currentGrandTotal = 0; // Menyimpan total belanja saat ini
 
         // ==========================================
         // 2. MENGAMBIL DATA (READ)
@@ -224,10 +245,9 @@
             const inputCari = document.getElementById('input-cari');
             const kataKunci = inputCari ? inputCari.value.toLowerCase() : "";
             
-            // Filter data berdasarkan kata kunci pencarian
             const produkTampil = produk.filter(p => p.nama.toLowerCase().includes(kataKunci));
 
-            // Fitur Baru: Mengurutkan data (Sort A-Z) berdasarkan nama produk
+            // Mengurutkan data (Sort A-Z)
             produkTampil.sort((a, b) => a.nama.localeCompare(b.nama));
 
             if (produkTampil.length === 0) {
@@ -349,7 +369,7 @@
         }
 
         // ==========================================
-        // 6. LOGIKA KERANJANG & CHECKOUT
+        // 6. LOGIKA KERANJANG, HITUNG KEMBALIAN & CHECKOUT
         // ==========================================
         function tambahKeKeranjang(id) {
             const itemProduk = produk.find(p => p.$id === id);
@@ -376,7 +396,7 @@
 
         function renderKeranjang() {
             const wadah = document.getElementById('keranjang-belanja');
-            let grandTotal = 0;
+            currentGrandTotal = 0;
             wadah.innerHTML = '';
 
             if(keranjang.length === 0) {
@@ -387,7 +407,7 @@
                 const produkAsli = produk.find(p => p.$id === k.$id);
                 const hargaGunakan = produkAsli ? produkAsli.harga : k.harga;
                 const subTotal = hargaGunakan * k.qty;
-                grandTotal += subTotal;
+                currentGrandTotal += subTotal;
 
                 wadah.innerHTML += `
                     <div class="keranjang-item">
@@ -402,12 +422,42 @@
                     </div>
                 `;
             });
-            document.getElementById('grand-total').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+            
+            document.getElementById('grand-total').innerText = 'Rp ' + currentGrandTotal.toLocaleString('id-ID');
+            hitungKembalian(); // Otomatis kalkulasi kembalian jika keranjang berubah
+        }
+
+        // Fitur Baru: Hitung Kembalian
+        function hitungKembalian() {
+            const tunai = parseInt(document.getElementById('input-tunai').value) || 0;
+            const kembalian = tunai - currentGrandTotal;
+            const spanKembalian = document.getElementById('kembalian');
+
+            // Hanya tampilkan hitungan jika ada barang di keranjang dan uang sudah diinput
+            if (currentGrandTotal === 0 || tunai === 0) {
+                spanKembalian.innerText = 'Rp 0';
+                spanKembalian.style.color = "var(--danger)";
+                return;
+            }
+
+            if (kembalian < 0) {
+                spanKembalian.innerText = "Uang Kurang!";
+                spanKembalian.style.color = "var(--danger)";
+            } else {
+                spanKembalian.innerText = 'Rp ' + kembalian.toLocaleString('id-ID');
+                spanKembalian.style.color = "var(--success)";
+            }
         }
 
         async function prosesCheckout() {
             if(keranjang.length === 0) {
                 alert("Pilih barang terlebih dahulu!");
+                return;
+            }
+
+            const tunai = parseInt(document.getElementById('input-tunai').value) || 0;
+            if (tunai < currentGrandTotal) {
+                alert("Uang tunai kurang dari total belanja! Pembayaran tidak bisa diproses.");
                 return;
             }
 
@@ -425,8 +475,13 @@
                         });
                     }
                 }
+                
+                const kembalian = tunai - currentGrandTotal;
+                alert(`Pembayaran Berhasil!\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}\nStok barang telah otomatis dikurangi di database cloud.`);
+                
                 keranjang = []; 
-                alert("Pembayaran Berhasil! Stok barang telah otomatis dikurangi di database cloud.");
+                document.getElementById('input-tunai').value = ''; // Kosongkan input tunai
+                
                 await muatData(); 
                 renderKeranjang(); 
             } catch (error) {
