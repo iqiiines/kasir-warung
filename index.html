@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kasir Warung Sembako Mama Mul</title>
+    <!-- Import Appwrite Web SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #23261F;
+            --ink-soft: #6B6F63;
+            --paper: #F3F1E9;
+            --surface: #FFFFFF;
+            --line: #E1DDCF;
+            --primary: #1E5C4D;
+            --primary-dark: #16453A;
+            --gold: #C88A2A;
+            --brick: #A5432B;
+            --slate: #4A5A73;
+            --danger: #A5432B;
+            --success: #1E5C4D;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: var(--paper);
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(35,38,31,0.05) 1px, transparent 0);
+            background-size: 22px 22px;
+            margin: 0;
+            padding: 28px 20px 60px;
+            color: var(--ink);
+        }
+        h1, h2, h3 { margin-top: 0; font-family: 'Fraunces', serif; font-weight: 600; }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 26px;
+        }
+        .brand .eyebrow {
+            display: block;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72em;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            margin-bottom: 4px;
+        }
+        .brand h1 {
+            font-size: 1.9em;
+            color: var(--primary-dark);
+            letter-spacing: -0.01em;
+        }
+
+        .owner-line {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: var(--ink-soft);
+        }
+        .owner-line .owner-role {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.82em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .owner-line .owner-name {
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            color: var(--ink);
+            margin-left: 5px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 22px;
+            max-width: 1180px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+        .panel {
+            background: var(--surface);
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            padding: 24px;
+            flex: 1;
+            min-width: 300px;
+        }
+        .panel-katalog { flex: 2; }
+        .panel h2 {
+            font-size: 1.15em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 11px 14px;
+            margin-bottom: 20px;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            font-size: 0.95em;
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+        }
+        .search-bar::placeholder { color: var(--ink-soft); }
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--surface);
+        }
+
+        .grid-produk {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .card-produk {
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 14px;
+            background: var(--surface);
+            transition: border-color 0.15s;
+        }
+        .card-produk:hover { border-color: var(--primary); }
+
+        .monogram {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            font-size: 0.95em;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .mono-0 { background: var(--primary); }
+        .mono-1 { background: var(--gold); }
+        .mono-2 { background: var(--brick); }
+        .mono-3 { background: var(--slate); }
+
+        .card-produk h3 {
+            margin: 0 0 3px 0;
+            font-size: 1em;
+            font-weight: 600;
+            font-family: 'IBM Plex Sans', sans-serif;
+            line-height: 1.25;
+        }
+        .card-produk .harga {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--ink-soft);
+            margin: 0 0 12px 0;
+            font-size: 0.92em;
+        }
+
+        .btn {
+            padding: 9px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 0.88em;
+            color: white;
+            width: 100%;
+            margin-top: 8px;
+            transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background-color: var(--primary); }
+        .btn-success { background-color: var(--primary); font-size: 1.02em; padding: 14px; letter-spacing: 0.01em; }
+        .btn-danger { background-color: transparent; color: var(--brick); border: 1px solid var(--line); }
+        .btn-warning { background-color: transparent; color: var(--gold); border: 1px solid var(--line); }
+        .flex-buttons { display: flex; gap: 6px; }
+        .flex-buttons .btn { margin-top: 8px; font-size: 0.8em; padding: 7px; }
+
+        hr.divider {
+            margin: 28px 0;
+            border: none;
+            border-top: 1px dashed var(--line);
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.85em;
+            color: var(--ink-soft);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 9px 10px;
+            box-sizing: border-box;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--paper);
+        }
+        .form-group input:focus { outline: none; border-color: var(--primary); background: var(--surface); }
+
+        /* ==== Receipt-style cart ==== */
+        .panel-keranjang { position: relative; overflow: visible; }
+        .panel-keranjang::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 0; right: 0;
+            height: 12px;
+            background:
+                radial-gradient(circle at 10px 0, transparent 7px, var(--paper) 7.5px) top left / 20px 12px repeat-x;
+        }
+
+        #keranjang-belanja { margin-bottom: 4px; }
+        .receipt-line {
+            display: flex;
+            align-items: baseline;
+            padding: 9px 0;
+            border-bottom: 1px dotted var(--line);
+            gap: 8px;
+        }
+        .rl-main { flex: 1; min-width: 0; }
+        .rl-name {
+            font-weight: 600;
+            font-size: 0.92em;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .rl-qty-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .qty-btn {
+            width: 22px; height: 22px;
+            border: 1px solid var(--line);
+            background: var(--paper);
+            border-radius: 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            cursor: pointer;
+            line-height: 1;
+            color: var(--ink);
+        }
+        .qty-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .qty-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85em;
+            min-width: 14px;
+            text-align: center;
+        }
+        .rl-price {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 500;
+            font-size: 0.92em;
+            white-space: nowrap;
+        }
+        .rl-remove {
+            background: none;
+            border: none;
+            color: var(--ink-soft);
+            cursor: pointer;
+            font-size: 0.95em;
+            padding: 2px 4px;
+        }
+        .rl-remove:hover { color: var(--brick); }
+
+        .empty-note {
+            color: var(--ink-soft);
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding-top: 16px;
+            margin-top: 6px;
+            border-top: 1px dashed var(--line);
+        }
+        .total-row .label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.78em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+        .total-row .value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.35em;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .kembalian-row .value { color: var(--brick); font-size: 1.15em; }
+        .kembalian-row.ok .value { color: var(--primary); }
+
+        .input-bayar {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.1em;
+            text-align: right;
+            padding: 10px 12px;
+            border: 1px solid var(--primary);
+            background-color: var(--paper);
+        }
+
+        #status-loading {
+            text-align: center;
+            color: var(--ink-soft);
+            margin-bottom: 15px;
+            font-size: 0.88em;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        @media (max-width: 640px) {
+            .panel { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="brand">
+        <span class="eyebrow">Warung Sembako</span>
+        <h1>Mama Mul</h1>
+        <div class="owner-line">
+            <span class="owner-role">Pemilik Usaha</span><span class="owner-name">Siti Mulyani</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Panel Kiri: Daftar Produk -->
+        <div class="panel panel-katalog">
+            <h2>Daftar Produk</h2>
+
+            <input type="text" id="input-cari" class="search-bar" placeholder="Cari nama barang di sini..." onkeyup="renderProduk()">
+
+            <!-- Status loading -->
+            <div id="status-loading">Mengambil data dari database...</div>
+            <div class="grid-produk" id="katalog-produk"></div>
+
+            <hr class="divider">
+
+            <h3>Tambah / Update Produk</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 2; min-width: 150px;">
+                    <label>Nama Barang</label>
+                    <input type="text" id="input-nama" placeholder="Contoh: Beras 1kg">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label>Harga (Rp)</label>
+                    <input type="number" id="input-harga" placeholder="10000">
+                </div>
+                <div style="flex: 1; min-width: 150px; display: flex; gap: 5px; align-items: flex-end; margin-bottom: 14px;">
+                    <button id="btn-simpan" class="btn btn-primary" onclick="simpanProduk()" style="margin-top: 0;">Simpan</button>
+                    <button id="btn-batal" class="btn btn-danger" onclick="batalEdit()" style="margin-top: 0; display: none;">Batal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Keranjang & Checkout (gaya struk) -->
+        <div class="panel panel-keranjang">
+            <h2>Keranjang Belanja</h2>
+            <div id="keranjang-belanja"></div>
+
+            <div class="total-row">
+                <span class="label">Sub Total</span>
+                <span class="value" id="grand-total">Rp 0</span>
+            </div>
+
+            <div class="form-group" style="margin-top: 18px;">
+                <label>Tunai (Rp)</label>
+                <input type="number" id="input-tunai" class="input-bayar" placeholder="0" onkeyup="hitungKembalian()" onchange="hitungKembalian()">
+            </div>
+
+            <div class="total-row kembalian-row" id="kembalian-row">
+                <span class="label">Kembalian</span>
+                <span class="value" id="kembalian">Rp 0</span>
+            </div>
+
+            <button class="btn btn-success" onclick="prosesCheckout()" id="btn-checkout" style="margin-top: 20px;">Bayar &amp; Checkout</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. KONFIGURASI APPWRITE DATABASE
+        // ==========================================
+        // Semua nilai konfigurasi dikumpulkan di sini supaya mudah diubah
+        // tanpa perlu mencari-cari di dalam kode.
+        const APPWRITE_CONFIG = {
+            projectId: '6a61e7d5000cfa72a4ac',
+            projectName: 'Kasir Sembako',
+            endpoint: 'https://sgp.cloud.appwrite.io/v1',
+            databaseId: '6a61e7f20038f7c3b53e',
+            collectionId: '6a61e7f20038f7c3b53ef'
+        };
+
+        const { Client, Databases, ID, Permission, Role } = Appwrite;
+
+        const client = new Client()
+            .setEndpoint(APPWRITE_CONFIG.endpoint)
+            .setProject(APPWRITE_CONFIG.projectId);
+
+        const databases = new Databases(client);
+        const databaseId = APPWRITE_CONFIG.databaseId;
+        const collectionId = APPWRITE_CONFIG.collectionId;
+
+        let produk = [];
+        let keranjang = [];
+        let editModeId = null;
+        let currentGrandTotal = 0;
+
+        const monoClasses = ['mono-0', 'mono-1', 'mono-2', 'mono-3'];
+        function monoKelas(nama) {
+            let hash = 0;
+            for (let i = 0; i < nama.length; i++) hash += nama.charCodeAt(i);
+            return monoClasses[hash % monoClasses.length];
+        }
+
+        // ==========================================
+        // 2. MENGAMBIL DATA (READ)
+        // ==========================================
+        async function muatData() {
+            document.getElementById('status-loading').style.display = 'block';
+            document.getElementById('status-loading').innerText = "Mengambil data...";
+            try {
+                const response = await databases.listDocuments(databaseId, collectionId);
+                produk = response.documents;
+
+                document.getElementById('status-loading').style.display = 'none';
+                renderProduk();
+            } catch (error) {
+                console.error("Error Appwrite:", error);
+                document.getElementById('status-loading').innerText = "Gagal mengambil data. Pastikan Permissions di tabel Appwrite sudah diset 'Any'.";
+            }
+        }
+
+        // ==========================================
+        // 3. MENAMPILKAN PRODUK & PENCARIAN (UI)
+        // ==========================================
+        function renderProduk() {
+            const wadah = document.getElementById('katalog-produk');
+            wadah.innerHTML = '';
+
+            const inputCari = document.getElementById('input-cari');
+            const kataKunci = inputCari ? inputCari.value.toLowerCase() : "";
+
+            const produkTampil = produk.filter(p => p.nama.toLowerCase().includes(kataKunci));
+
+            // Mengurutkan data (Sort A-Z)
+            produkTampil.sort((a, b) => a.nama.localeCompare(b.nama));
+
+            if (produkTampil.length === 0) {
+                wadah.innerHTML = '<p style="color: var(--ink-soft); grid-column: 1 / -1; text-align: center;">Tidak ada barang yang cocok.</p>';
+                return;
+            }
+
+            produkTampil.forEach(p => {
+                const inisial = p.nama.trim().charAt(0).toUpperCase();
+                wadah.innerHTML += `
+                    <div class="card-produk">
+                        <div class="monogram ${monoKelas(p.nama)}">${inisial}</div>
+                        <h3>${p.nama}</h3>
+                        <p class="harga">Rp ${p.harga.toLocaleString('id-ID')}</p>
+
+                        <button class="btn btn-primary" onclick="tambahKeKeranjang('${p.$id}')">
+                            + Keranjang
+                        </button>
+
+                        <div class="flex-buttons">
+                            <button class="btn btn-warning" style="flex: 1;" onclick="editProduk('${p.$id}')">Edit</button>
+                            <button class="btn btn-danger" style="flex: 1;" onclick="hapusProduk('${p.$id}')">Hapus</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 4. SIMPAN & UPDATE DATA (CREATE / UPDATE)
+        // ==========================================
+        async function simpanProduk() {
+            const nama = document.getElementById('input-nama').value;
+            const harga = parseInt(document.getElementById('input-harga').value);
+
+            if(!nama || !harga) {
+                alert("Mohon isi nama dan harga barang!");
+                return;
+            }
+
+            document.getElementById('btn-simpan').innerText = "Menyimpan...";
+            document.getElementById('btn-simpan').disabled = true;
+
+            try {
+                if (editModeId !== null) {
+                    await databases.updateDocument(databaseId, collectionId, editModeId, {
+                        nama: nama, harga: harga
+                    });
+                    alert("Data berhasil diupdate!");
+                } else {
+                    const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
+                    if(produkLama) {
+                        await databases.updateDocument(databaseId, collectionId, produkLama.$id, {
+                            harga: harga
+                        });
+                    } else {
+                        await databases.createDocument(databaseId, collectionId, ID.unique(), {
+                            nama: nama, harga: harga
+                        }, [
+                            Permission.read(Role.any()),
+                            Permission.update(Role.any()),
+                            Permission.delete(Role.any())
+                        ]);
+                    }
+                }
+                batalEdit();
+                await muatData();
+            } catch (error) {
+                console.error(error);
+                alert("Gagal menyimpan data. Pastikan Permissions di Appwrite sudah diset dan atribut stok sudah dihapus dari skema.");
+            }
+
+            document.getElementById('btn-simpan').innerText = "Simpan";
+            document.getElementById('btn-simpan').disabled = false;
+        }
+
+        function editProduk(id) {
+            const item = produk.find(p => p.$id === id);
+            if (item) {
+                document.getElementById('input-nama').value = item.nama;
+                document.getElementById('input-harga').value = item.harga;
+
+                document.getElementById('btn-simpan').innerText = "Update";
+                document.getElementById('btn-simpan').classList.replace('btn-primary', 'btn-warning');
+                document.getElementById('btn-batal').style.display = "block";
+
+                editModeId = id;
+                document.getElementById('input-nama').focus();
+            }
+        }
+
+        function batalEdit() {
+            document.getElementById('input-nama').value = '';
+            document.getElementById('input-harga').value = '';
+
+            document.getElementById('btn-simpan').innerText = "Simpan";
+            document.getElementById('btn-simpan').classList.replace('btn-warning', 'btn-primary');
+            document.getElementById('btn-batal').style.display = "none";
+
+            editModeId = null;
+        }
+
+        // ==========================================
+        // 5. FITUR HAPUS DATA (DELETE)
+        // ==========================================
+        async function hapusProduk(id) {
+            const item = produk.find(p => p.$id === id);
+            if(confirm(`Yakin ingin menghapus secara permanen produk "${item.nama}"?`)) {
+                try {
+                    await databases.deleteDocument(databaseId, collectionId, id);
+
+                    keranjang = keranjang.filter(k => k.$id !== id);
+                    renderKeranjang();
+
+                    await muatData();
+                } catch (error) {
+                    console.error(error);
+                    alert("Gagal menghapus data.");
+                }
+            }
+        }
+
+        // ==========================================
+        // 6. LOGIKA KERANJANG, KEMBALIAN & CHECKOUT
+        // ==========================================
+        function tambahKeKeranjang(id) {
+            const itemProduk = produk.find(p => p.$id === id);
+            const itemDiKeranjang = keranjang.find(k => k.$id === id);
+
+            if (itemDiKeranjang) {
+                itemDiKeranjang.qty++; // Tidak ada lagi batasan stok
+            } else {
+                keranjang.push({ ...itemProduk, qty: 1 });
+            }
+            renderKeranjang();
+        }
+
+        function kurangiQty(id) {
+            const itemDiKeranjang = keranjang.find(k => k.$id === id);
+            if (!itemDiKeranjang) return;
+            itemDiKeranjang.qty--;
+            if (itemDiKeranjang.qty <= 0) {
+                keranjang = keranjang.filter(k => k.$id !== id);
+            }
+            renderKeranjang();
+        }
+
+        function hapusDariKeranjang(id) {
+            keranjang = keranjang.filter(k => k.$id !== id);
+            renderKeranjang();
+        }
+
+        function renderKeranjang() {
+            const wadah = document.getElementById('keranjang-belanja');
+            currentGrandTotal = 0;
+            wadah.innerHTML = '';
+
+            if(keranjang.length === 0) {
+                wadah.innerHTML = '<p class="empty-note">Keranjang masih kosong</p>';
+            }
+
+            keranjang.forEach(k => {
+                const produkAsli = produk.find(p => p.$id === k.$id);
+                const hargaGunakan = produkAsli ? produkAsli.harga : k.harga;
+                const subTotal = hargaGunakan * k.qty;
+                currentGrandTotal += subTotal;
+
+                wadah.innerHTML += `
+                    <div class="receipt-line">
+                        <div class="rl-main">
+                            <span class="rl-name">${k.nama}</span>
+                            <div class="rl-qty-row">
+                                <button class="qty-btn" onclick="kurangiQty('${k.$id}')">-</button>
+                                <span class="qty-val">${k.qty}</span>
+                                <button class="qty-btn" onclick="tambahKeKeranjang('${k.$id}')">+</button>
+                                <span style="color: var(--ink-soft); font-size: 0.78em; font-family: 'IBM Plex Mono', monospace; margin-left: 4px;">
+                                    &times; Rp ${hargaGunakan.toLocaleString('id-ID')}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="rl-price">Rp ${subTotal.toLocaleString('id-ID')}</span>
+                        <button class="rl-remove" onclick="hapusDariKeranjang('${k.$id}')" title="Hapus dari keranjang">&times;</button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('grand-total').innerText = 'Rp ' + currentGrandTotal.toLocaleString('id-ID');
+            hitungKembalian();
+        }
+
+        function hitungKembalian() {
+            const tunai = parseInt(document.getElementById('input-tunai').value) || 0;
+            const kembalian = tunai - currentGrandTotal;
+            const spanKembalian = document.getElementById('kembalian');
+            const rowKembalian = document.getElementById('kembalian-row');
+
+            if (currentGrandTotal === 0 || tunai === 0) {
+                spanKembalian.innerText = 'Rp 0';
+                rowKembalian.classList.remove('ok');
+                return;
+            }
+
+            if (kembalian < 0) {
+                spanKembalian.innerText = "Uang Kurang!";
+                rowKembalian.classList.remove('ok');
+            } else {
+                spanKembalian.innerText = 'Rp ' + kembalian.toLocaleString('id-ID');
+                rowKembalian.classList.add('ok');
+            }
+        }
+
+        function prosesCheckout() {
+            if(keranjang.length === 0) {
+                alert("Pilih barang terlebih dahulu!");
+                return;
+            }
+
+            const tunai = parseInt(document.getElementById('input-tunai').value) || 0;
+            if (tunai < currentGrandTotal) {
+                alert("Uang tunai kurang dari total belanja! Pembayaran tidak bisa diproses.");
+                return;
+            }
+
+            const kembalian = tunai - currentGrandTotal;
+            alert(`Pembayaran Berhasil!\n\nSubtotal: Rp ${currentGrandTotal.toLocaleString('id-ID')}\nTunai: Rp ${tunai.toLocaleString('id-ID')}\n-----------------------\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}`);
+
+            // Proses selesai, bersihkan keranjang
+            keranjang = [];
+            document.getElementById('input-tunai').value = '';
+            renderKeranjang();
+        }
+
+        // Inisialisasi: Tarik data saat pertama kali dimuat
+        muatData();
+        renderKeranjang();
+    </script>
+</body>
+</html>
