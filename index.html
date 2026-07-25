@@ -397,8 +397,6 @@
         // ==========================================
         // 1. KONFIGURASI APPWRITE DATABASE
         // ==========================================
-        // Semua nilai konfigurasi dikumpulkan di sini supaya mudah diubah
-        // tanpa perlu mencari-cari di dalam kode.
         const APPWRITE_CONFIG = {
             projectId: '6a61e7d5000cfa72a4ac',
             projectName: 'Kasir Sembako',
@@ -407,7 +405,8 @@
             collectionId: '6a61e7f20038f7c3b53ef'
         };
 
-        const { Client, Databases, ID, Permission, Role } = Appwrite;
+        // PERUBAHAN: Menambahkan Query agar bisa melimit data > 25
+        const { Client, Databases, ID, Permission, Role, Query } = Appwrite;
 
         const client = new Client()
             .setEndpoint(APPWRITE_CONFIG.endpoint)
@@ -436,14 +435,17 @@
             document.getElementById('status-loading').style.display = 'block';
             document.getElementById('status-loading').innerText = "Mengambil data...";
             try {
-                const response = await databases.listDocuments(databaseId, collectionId);
+                // PERUBAHAN: Tambahkan Query.limit(100) agar semua barang terambil
+                const response = await databases.listDocuments(databaseId, collectionId, [
+                    Query.limit(100)
+                ]);
                 produk = response.documents;
 
                 document.getElementById('status-loading').style.display = 'none';
                 renderProduk();
             } catch (error) {
                 console.error("Error Appwrite:", error);
-                document.getElementById('status-loading').innerText = "Gagal mengambil data. Pastikan Permissions di tabel Appwrite sudah diset 'Any'.";
+                document.getElementById('status-loading').innerText = "Gagal mengambil data. Pastikan Permissions diset 'Any'.";
             }
         }
 
@@ -474,11 +476,9 @@
                         <div class="monogram ${monoKelas(p.nama)}">${inisial}</div>
                         <h3>${p.nama}</h3>
                         <p class="harga">Rp ${p.harga.toLocaleString('id-ID')}</p>
-
                         <button class="btn btn-primary" onclick="tambahKeKeranjang('${p.$id}')">
                             + Keranjang
                         </button>
-
                         <div class="flex-buttons">
                             <button class="btn btn-warning" style="flex: 1;" onclick="editProduk('${p.$id}')">Edit</button>
                             <button class="btn btn-danger" style="flex: 1;" onclick="hapusProduk('${p.$id}')">Hapus</button>
@@ -504,32 +504,46 @@
             document.getElementById('btn-simpan').disabled = true;
 
             try {
+                // PERUBAHAN: Menangkap nilai balikan (result) dari server lalu di-update ke UI lokal
                 if (editModeId !== null) {
-                    await databases.updateDocument(databaseId, collectionId, editModeId, {
+                    const result = await databases.updateDocument(databaseId, collectionId, editModeId, {
                         nama: nama, harga: harga
                     });
+                    
+                    const index = produk.findIndex(p => p.$id === editModeId);
+                    if (index !== -1) produk[index] = result;
+                    
                     alert("Data berhasil diupdate!");
                 } else {
                     const produkLama = produk.find(p => p.nama.toLowerCase() === nama.toLowerCase());
                     if(produkLama) {
-                        await databases.updateDocument(databaseId, collectionId, produkLama.$id, {
+                        const result = await databases.updateDocument(databaseId, collectionId, produkLama.$id, {
                             harga: harga
                         });
+                        
+                        const index = produk.findIndex(p => p.$id === produkLama.$id);
+                        if (index !== -1) produk[index] = result;
                     } else {
-                        await databases.createDocument(databaseId, collectionId, ID.unique(), {
+                        const result = await databases.createDocument(databaseId, collectionId, ID.unique(), {
                             nama: nama, harga: harga
                         }, [
                             Permission.read(Role.any()),
                             Permission.update(Role.any()),
                             Permission.delete(Role.any())
                         ]);
+                        
+                        // Menambahkan data baru langsung ke array tanpa meloading ulang semua data
+                        produk.push(result);
                     }
                 }
                 batalEdit();
-                await muatData();
+                
+                // PERUBAHAN: Cukup render ulang UI tanpa perlu fetch ulang data (Optimistic UI)
+                renderProduk();
+                
             } catch (error) {
                 console.error(error);
-                alert("Gagal menyimpan data. Pastikan Permissions di Appwrite sudah diset dan atribut stok sudah dihapus dari skema.");
+                alert("Gagal menyimpan data.");
             }
 
             document.getElementById('btn-simpan').innerText = "Simpan";
@@ -571,10 +585,14 @@
                 try {
                     await databases.deleteDocument(databaseId, collectionId, id);
 
+                    // PERUBAHAN: Hapus data dari array lokal dan langsung render,
+                    // Tidak perlu memanggil muatData() lagi.
+                    produk = produk.filter(p => p.$id !== id);
                     keranjang = keranjang.filter(k => k.$id !== id);
+                    
                     renderKeranjang();
+                    renderProduk();
 
-                    await muatData();
                 } catch (error) {
                     console.error(error);
                     alert("Gagal menghapus data.");
@@ -590,7 +608,7 @@
             const itemDiKeranjang = keranjang.find(k => k.$id === id);
 
             if (itemDiKeranjang) {
-                itemDiKeranjang.qty++; // Tidak ada lagi batasan stok
+                itemDiKeranjang.qty++;
             } else {
                 keranjang.push({ ...itemProduk, qty: 1 });
             }
@@ -686,7 +704,6 @@
             const kembalian = tunai - currentGrandTotal;
             alert(`Pembayaran Berhasil!\n\nSubtotal: Rp ${currentGrandTotal.toLocaleString('id-ID')}\nTunai: Rp ${tunai.toLocaleString('id-ID')}\n-----------------------\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}`);
 
-            // Proses selesai, bersihkan keranjang
             keranjang = [];
             document.getElementById('input-tunai').value = '';
             renderKeranjang();
