@@ -397,15 +397,25 @@
         // ==========================================
         // 1. KONFIGURASI APPWRITE DATABASE
         // ==========================================
+        // Semua nilai konfigurasi dikumpulkan di sini supaya mudah diubah
+        // tanpa perlu mencari-cari di dalam kode.
+        const APPWRITE_CONFIG = {
+            projectId: '6a61e7d5000cfa72a4ac',
+            projectName: 'Kasir Sembako',
+            endpoint: 'https://sgp.cloud.appwrite.io/v1',
+            databaseId: '6a61e7f20038f7c3b53e',
+            collectionId: '6a61e7f20038f7c3b53ef'
+        };
+
         const { Client, Databases, ID } = Appwrite;
 
         const client = new Client()
-            .setEndpoint('https://sgp.cloud.appwrite.io/v1')
-            .setProject('6a61e7d5000cfa72a4ac');
+            .setEndpoint(APPWRITE_CONFIG.endpoint)
+            .setProject(APPWRITE_CONFIG.projectId);
 
         const databases = new Databases(client);
-        const databaseId = '6a61e7f20038f7c3b53e';
-        const collectionId = '6a61e7f20038f7c3b53ef';
+        const databaseId = APPWRITE_CONFIG.databaseId;
+        const collectionId = APPWRITE_CONFIG.collectionId;
 
         let produk = [];
         let keranjang = [];
